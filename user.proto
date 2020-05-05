@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package gRPC;
+
+option go_package = ".;gRPC";
+
+import "base/common.proto";
+
+service UserService {
+    rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse) {}
+    rpc GetUsers (GetUsersRequest) returns (UsersResponse) {}
+    rpc GetUser (GetUserRequest) returns (UserResponse) {}
+    rpc CreateUser (CreateUserRequest) returns (UsersResponse) {}
+    rpc UpdateUser (UpdateUserRequest) returns (UserResponse) {}
+    rpc DeleteUser (DeleteUserRequest) returns (UsersResponse) {}
+}
+
+message HealthCheckRequest {
+}
+
+message HealthCheckResponse {
+    string msg = 1;
+}
+
+message GetUsersRequest {
+}
+
+message GetUserRequest {
+	int32 id = 1;
+}
+
+message CreateUserRequest {
+	int32 id = 1;
+	string username = 2;
+	string email = 3;
+}
+
+message UpdateUserRequest {
+	int32 id = 1;
+	base.User user = 2;
+}
+
+message DeleteUserRequest {
+	int32 id = 1;
+}
+
+message UserResponse {
+	bool sucess = 1;
+	string error = 2;
+    base.User user = 3;
+}
+
+message UsersResponse {
+	bool sucess = 1;
+	string error = 2;
+    repeated base.User users = 3;
+}
