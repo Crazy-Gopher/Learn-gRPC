@@ -1,0 +1,493 @@
+Golang gRPC steps:
+
+## Download protoc compiler:
+	https://github.com/protocolbuffers/protobuf/releases for windows (protoc-3.11.4-win64.zip)
+	Install the protoc compiler that is used to generate gRPC service code. The simplest way to do this is to download pre-compiled
+	binaries for your platform(protoc-<version>-<platform>.zip) from here: https://github.com/google/protobuf/releases
+	protoc-3.9.1-win64.zip
+	1. Unzip this file.
+	2. To install, simply place this binary somewhere in your GOPATH=C:\Users\kapil_jain\go.
+	3. Check version
+		->protoc --version
+		libprotoc 3.9.1
+	
+## Install grpc and protoc-gen-go in golang:
+	1. go get github.com/golang/protobuf/protoc-gen-go
+	2. go get google.golang.org/grpc
+
+## Update your PATH so that the protoc compiler can find the plugin:
+	$ export PATH="$PATH:$C:\Users\kapjain\go\protoc-3.11.4-win64\bin"
+	Path of protoc compiler: C:\Users\kapjain\go\protoc-3.11.4-win64\bin\protoc.exe
+	
+## we need to generate the gRPC client and server interfaces from .proto service definition. Run the below cmd under gRPC folder
+	protoc -I gRPC/ gRPC/hello.proto --go_out=plugins=grpc:gRPC
+	protoc -I gRPC/ gRPC/user.proto --go_out=plugins=grpc:gRPC
+	protoc -I gRPC/base/ gRPC/base/common.proto --go_out=plugins=grpc:gRPC
+
+Generate the code:
+protoc -I helloworld/ helloworld/helloworld.proto --go_out=plugins=grpc:helloworld
+protoc --proto_path helloworld --proto_path=third_libraray --go_out=plugins=grpc:helloworld helloworld.proto
+
+protoc --proto_path helloworld --proto_path=third_libraray --go_out=plugins=grpc:helloworld helloworld.proto
+
+	Note: 1. Keep all the generated files in same folder
+	Note: 2. You can keep all the proto files in different folder but you might see below error. If you see error then remove base from that function.
+		
+	Error:
+	gRPC: user.proto
+	gRPC/base: common.proto
+
+	github.com/ncjain/gRPC
+	..\user.pb.go:601:2: undefined: file_base_common_proto_init
+
+
+
+Python gRPC steps:
+
+## Install grpc package in python
+	1. pip install grpcio
+	2. pip install grpcio-tools
+
+## Generate Proto File:
+	1. Go to the path where the file is present and run the below command
+		python -m grpc.tools.protoc -I. --python_out=. --grpc_python_out=. hello.proto
+		python -m grpc.tools.protoc -I. --python_out=. --grpc_python_out=. user.proto
+		python -m grpc.tools.protoc -I. --python_out=. --grpc_python_out=. common.proto
+	2. Specify the path in the below command(replace dot(.) with path) and run in from anywhere
+		python -m grpc.tools.protoc -I C:\Users\kjain\go\src\github.com\ncjain\gRPC --python_out=C:\Users\kjain\go\src\github.com\ncjain\gRPC --grpc_python_out=C:\Users\kjain\go\src\github.com\ncjain\gRPC user.proto
+
+## GRPC with Django (https://github.com/gluk-w/django-grpc)
+	1. pip install django-grpc
+
+
+	
+==================================================================================================================================
+## ProtoBuf:
+
+## Defining A Message Type
+Multiple message types can be defined in a single .proto file
+
+syntax = "proto3";
+
+/* SearchRequest represents a search query, with pagination options to
+ * indicate which results to include in the response. */
+
+message SearchRequest {
+  string query = 1;
+  int32 page_number = 2;  // Which page number do we want?
+  int32 result_per_page = 3;  // Number of results to return per page.
+}
+
+message SearchResponse {
+ ...
+}
+
+Note 1: The first line of the file specifies that you're using proto3 syntax: if you don't do this the protocol buffer compiler will assume you are using proto2. This must be the first non-empty, non-comment line of the file.
+
+
+## Specifying Field Types:
+.proto Type			Python		Golang
+double				float		float64
+float				float		float32
+int32				int			int32
+int64				int/long	int64
+uint32				int/long	uint32
+uint64				int/long	uint64
+sint32				int			int32
+sint64				int/log		int64
+fixed32				int/long	uint32
+fixed64				int/long	uint64
+sfixed32			int			int32
+sfixed64			int/long	int64
+bool				bool		bool
+string				str			string
+bytes				str			[]byte
+
+
+## Assigning Field Numbers:
+As you can see, each field in the message definition has a unique number. These field numbers are used to identify your fields in the message binary format, and should not be changed once your message type is in use.
+
+1. numbers in the range 1 through 15 take one byte to encode
+2. numbers in the range 16 through 2047 take two bytes.
+3. The smallest field number you can specify is 1, and the largest is 229 - 1, or 536,870,911
+4. You also cannot use the numbers 19000 through 19999, as they are reserved for the Protocol Buffers implementation - the protocol buffer compiler will complain if you use one of these reserved numbers in your .proto. 
+5. Similarly, you cannot use any previously reserved field numbers.
+
+
+##Specifying Field Rules:
+Message fields can be one of the following:
+
+1. singular: a well-formed message can have zero or one of this field (but not more than one). And this is the default field rule for proto3 syntax.
+2. repeated: this field can be repeated any number of times (including zero) in a well-formed message. The order of the repeated values will be preserved.
+
+
+## Comment in .proto file:
+1. Single line comment // comment text
+2. Multi-line comment  /* multi-line comment text */
+
+
+## Reserved Fields
+If you update a message type by entirely removing a field, or commenting it out, future users can reuse the field number when making their own updates to the type. This can cause severe issues if they later load old versions of the same .proto, including data corruption, privacy bugs, and so on.
+
+message Foo {
+  reserved 2, 15, 9 to 11;
+  reserved "foo", "bar";
+}
+Note that you can't mix field names and field numbers in the same reserved statement.
+
+
+## What's Generated From Your .proto:
+For Python, hello_pb2.py and hello_pb2_grpc.py
+For Go, hello.pb.go 
+
+
+##Default Values
+When a message is parsed, if the encoded message does not contain a particular singular element, the corresponding field in the parsed object is set to the default value for that field. These defaults are type-specific:
+
+For strings, the default value is the empty string.
+For bytes, the default value is empty bytes.
+For bools, the default value is false.
+For numeric types, the default value is zero.
+For enums, the default value is the first defined enum value, which must be 0.
+For message fields, the field is not set. Its exact value is language-dependent.
+
+The default value for repeated fields is empty (generally an empty list in the appropriate language).
+
+
+## Enumerations:
+every enum definition must contain a constant that maps to zero as its first element. 
+
+message SearchRequest {
+  string query = 1;
+  int32 page_number = 2;
+  int32 result_per_page = 3;
+  enum Corpus {
+    UNIVERSAL = 0;
+    WEB = 1;
+    IMAGES = 2;
+    LOCAL = 3;
+    NEWS = 4;
+    PRODUCTS = 5;
+    VIDEO = 6;
+  }
+  Corpus corpus = 4;
+}
+
+You can define aliases by assigning the same value to different enum constants. To do this you need to set the allow_alias option to true, otherwise the protocol compiler will generate an error message when aliases are found.
+
+message MyMessage1 {
+  enum EnumAllowingAlias {
+    option allow_alias = true;
+    UNKNOWN = 0;
+    STARTED = 1;
+    RUNNING = 1;
+  }
+}
+message MyMessage2 {
+  enum EnumNotAllowingAlias {
+    UNKNOWN = 0;
+    STARTED = 1;
+    // RUNNING = 1;  // Uncommenting this line will cause a compile error inside Google and a warning message outside.
+  }
+}
+
+
+## Reserved Values:
+enum Foo {
+  reserved 2, 15, 9 to 11, 40 to max;
+  reserved "FOO", "BAR";
+}
+
+## Using Other Message Types:
+message SearchResponse {
+  repeated Result results = 1;
+}
+
+message Result {
+  string url = 1;
+  string title = 2;
+  repeated string snippets = 3;
+}
+
+## Importing Definitions
+https://developers.google.com/protocol-buffers/docs/proto3#importing-definitions
+
+// new.proto
+// All definitions are moved here
+
+// old.proto
+// This is the proto that all clients are importing.
+import public "new.proto";
+import "other.proto";
+
+// client.proto
+import "old.proto";
+// You use definitions from old.proto and new.proto, but not other.proto
+
+
+## Nested Types:
+You can define and use message types inside other message types, as in the following example – here the Result message is defined inside the SearchResponse message:
+
+message SearchResponse {
+  message Result {
+    string url = 1;
+    string title = 2;
+    repeated string snippets = 3;
+  }
+  repeated Result results = 1;
+}
+
+If you want to reuse this message type outside its parent message type, you refer to it as Parent.Type:
+message SomeOtherMessage {
+  SearchResponse.Result result = 1;
+}
+
+You can nest messages as deeply as you like:
+
+message Outer {                  // Level 0
+  message MiddleAA {  // Level 1
+    message Inner {   // Level 2
+      int64 ival = 1;
+      bool  booly = 2;
+    }
+  }
+  message MiddleBB {  // Level 1
+    message Inner {   // Level 2
+      int32 ival = 1;
+      bool  booly = 2;
+    }
+  }
+}
+
+## Package:
+You can add an optional package specifier to a .proto file to prevent name clashes between protocol message types
+package foo.bar;
+message Open { ... }
+
+1. In Python, the package directive is ignored, since Python modules are organized according to their location in the file system.
+2. In Go, the package is used as the Go package name, unless you explicitly provide an option go_package in your .proto file.
+
+## Defining Services:
+service SearchService {
+  rpc Search (SearchRequest) returns (SearchResponse);
+}
+
+
+
+
+
+// we import .proto file when our file is dependent on other proto file
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/duration.proto";
+ 
+google.protobuf.Timestamp created_at = 7;
+google.protobuf.Struct attributes = 6;
+google.protobuf.Duration duration = 1;
+map<string, google.protobuf.Int64Value> thresholds = 2;
+google.protobuf.Struct fieldset_data = 1 [json_name="fieldset_data"];
+
+google.protobuf.StringValue after = 5;
+google.protobuf.Int64Value limit = 6;
+google.protobuf.Int32Value questionnaire_version = 4;
+google.protobuf.DoubleValue price = 4;
+google.protobuf.BoolValue is_escalated = 5;
+google.protobuf.FloatValue feedback_score = 21;
+google.protobuf.UInt64Value offset = 9;
+
+
+oneof options
+enum
+repeated: If a field is repeated, the field may be repeated any number of times (including zero). 
+required
+optional
+default
+
+
+Example 1:
+message Person {
+  /* multiline comment */
+  string name = 1;
+  int32 id = 2;  // Unique ID number for this person.
+  string email = 3;
+  enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+  }
+  message PhoneNumber {
+    string number = 1;
+    PhoneType type = 2;
+  }
+  repeated PhoneNumber phones = 4;
+  google.protobuf.Timestamp last_updated = 5;
+}
+
+// Our address book file is just one of these.
+message AddressBook {
+  repeated Person people = 1;
+}
+
+Example 2:
+
+message User {
+    int id = 1;
+    string username = 2;
+    string firstname = 3;
+	string lastname = 4;
+    bool is_admin = 5;
+	string create_ts = 6;
+	bytes data = 6;
+	UserType user_type = 7;
+	repeated Skill skills = 8;
+}
+enum UserType {
+    ADMIN = 0;
+    EMPLOYEE = 1;
+    OTHER = 2;
+}
+message Blog {
+    oneof options {
+        string language = 1;
+        string framework = 2;
+    }
+}
+
+=================================================================================================================================
+GRPC:
+from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.wrappers_pb2 import UInt64Value
+from google.protobuf.wrappers_pb2 import StringValue
+grpc_services.py
+import grpc
+from google.protobuf.timestamp_pb2 import Timestamp
+timestamp=timestamp_pb2.Timestamp(seconds=seconds, nanos=nanos)
+
+grpc.insecure_channel(INSIGHT_SVC_HOST, options=[
+        ('grpc.min_reconnect_backoff_ms', 100),
+        ('grpc.max_reconnect_backoff_ms', 100),
+    ])
+
+grpc.StatusCode.UNAVAILABLE:
+resp = grpc_stub.StoreAndTransformImage(req, timeout=self.timeout)
+ 
+[
+media_pb2.TransformOperation(
+	operation_id='progressive',
+		transformation_chain=[
+			media_pb2.Transformation(
+				interlace=media_pb2.InterlaceOptions(
+				interlace=True,
+				),
+			),
+		],
+	)
+]
+
+
+def try_reconnect_grpc_by_exception(self, e):
+	is_grpc_error = isinstance(e, grpc.RpcError)
+	if is_grpc_error:
+		if e.code() == grpc.StatusCode.UNAVAILABLE:
+						self.init_grpc_connection()
+						return True
+		elif e.code() == grpc.StatusCode.DEADLINE_EXCEEDED:
+						return True
+		elif e.code() == grpc.StatusCode.INTERNAL:
+			if "Received RST_STREAM with error code" in str(e.details()):
+				# HTTP/2 error code mapping
+				# https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#http2-transport-mapping
+				# Envoy open issue on python service
+				# https://github.com/envoyproxy/envoy/issues/3724
+				self.init_grpc_connection()
+				return True
+			if "GOAWAY received" in str(e.details()):
+				# a past issue about this: https://github.com/grpc/grpc/issues/14088
+				# even it should be fixed in 1.10, but somehow we're still getting it
+				# for safe, still do some reconnection for it here
+				self.init_grpc_connection()
+				return True
+	return False
+ 
+def init_grpc_connection(self):
+	self.grpc_channel = grpc.insecure_channel(MEDIA_SVC_HOSTPORT, options=[
+					('grpc.min_reconnect_backoff_ms', 100),
+					('grpc.max_reconnect_backoff_ms', MEDIA_SVC_TIMEOUT),
+	])
+	self.grpc_stub = media_pb2_grpc.MediaServiceStub(self.grpc_channel)
+ 
+	while attempt <= max_retries:
+		attempt += 1
+		try:
+			resp = self.grpc_stub.StoreAndTransformImage(
+				req, timeout=MEDIA_SVC_TIMEOUT
+			)
+		except Exception as e:
+			if self.try_reconnect_grpc_by_exception(e):
+				continue
+			else:
+				logger.exception(e)
+				return []
+		else:
+			break
+
+
+ 
+#verified
+import datetime
+from google.protobuf.timestamp_pb2 import Timestamp
+ 
+def get_pb_ts(dt):
+    t = Timestamp()
+    t.FromDatetime(dt)
+    return t
+               
+dt = datetime.datetime.now() #datetime.datetime(2019, 7, 3, 19, 2, 56, 819757)
+dt = get_pb_ts(dt)
+seconds: 1562180576
+nanos: 819757000
+ 
+#verified
+from google.protobuf.timestamp_pb2 import Timestamp
+from datetime import datetime
+from django.utils.timezone import utc
+formatted_dt='2019-06-25T23:20:50Z'
+t = datetime.strptime(formatted_dt.split('+')[0], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=utc)
+formatted_dt="2021-09-22T19:42:31+07:00"
+t = datetime.strptime(formatted_dt.split('+')[0], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=utc)
+timestamp = Timestamp(seconds=int(time.mktime(t.timetuple())))
+timestamp
+ 
+ 
+def unix_to_proto(unix):
+    fraction, whole = math.modf(unix)
+    return Timestamp(seconds=int(whole), nanos=int(round(fraction * 1e9)))
+ 
+from google.protobuf.wrappers_pb2 import UInt64Value
+from google.protobuf.wrappers_pb2 import StringValue
+ 
+ 
+Dictionary or json to struct
+https://developers.google.com/protocol-buffers/docs/reference/python/
+from google.protobuf.json_format import MessageToJson
+  # Create a proto object and serialize it to a json format string.
+  message = my_proto_pb2.MyMessage(foo='bar')
+  json_string = json_format.MessageToJson(message)
+ 
+  # Parse a json format string to proto object.
+  message = json_format.Parse(json_string, my_proto_pb2.MyMessage())
+ 
+  
+from google.protobuf.struct_pb2 import Struct
+s = Struct()
+s.update({"key": "value"})
+will return an object with representation
+ 
+fields {
+  key: "key"
+  value {
+    string_value: "value"
+  }
+}
+=================================================================================================================================
